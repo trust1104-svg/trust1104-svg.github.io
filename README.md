@@ -2,37 +2,51 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
     <title>Складской сканер</title>
     <style>
-        * { box-sizing: border-box; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #f5f5f5;
             margin: 0;
-            padding: 16px;
+            padding: 0;
             padding-bottom: 80px;
+            width: 100%;
+            overflow-x: hidden;
         }
+        
         .container {
-            max-width: 600px;
+            max-width: 100%;
+            width: 100%;
+            padding: 12px;
             margin: 0 auto;
         }
+        
         .card {
             background: white;
-            border-radius: 20px;
-            padding: 16px;
-            margin-bottom: 16px;
+            border-radius: 16px;
+            padding: 15px;
+            margin-bottom: 12px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
+        
         .header {
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
+        
         .header h1 {
-            font-size: 24px;
+            font-size: 22px;
             margin: 0;
             color: #333;
         }
+        
         .status {
             display: inline-block;
             padding: 4px 12px;
@@ -40,63 +54,80 @@
             font-size: 12px;
             margin-top: 8px;
         }
+        
         .status.online {
             background: #d4edda;
             color: #155724;
         }
+        
         .status.offline {
             background: #f8d7da;
             color: #721c24;
         }
+        
         .status.checking {
             background: #fff3cd;
             color: #856404;
         }
+        
         .scanner-section {
             text-align: center;
         }
+        
         video {
             width: 100%;
-            border-radius: 16px;
+            border-radius: 12px;
             background: #000;
             margin-top: 8px;
         }
+        
         .btn {
             width: 100%;
             padding: 14px;
             font-size: 16px;
             font-weight: bold;
             border: none;
-            border-radius: 16px;
+            border-radius: 12px;
             cursor: pointer;
-            margin-top: 12px;
+            margin-top: 10px;
             transition: transform 0.1s;
         }
+        
         .btn:active {
-            transform: scale(0.98);
+            transform: scale(0.97);
         }
+        
         .btn-primary {
             background: #007aff;
             color: white;
         }
+        
         .btn-success {
             background: #34c759;
             color: white;
         }
+        
         .btn-secondary {
             background: #8e8e93;
             color: white;
         }
-        .input-group {
-            margin-bottom: 16px;
+        
+        .btn-danger {
+            background: #ff3b30;
+            color: white;
         }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
         .input-group label {
             display: block;
             font-size: 14px;
             font-weight: 600;
-            color: #333;
             margin-bottom: 6px;
         }
+        
         .input-group input {
             width: 100%;
             padding: 12px;
@@ -105,6 +136,7 @@
             border-radius: 12px;
             background: white;
         }
+        
         .cart-item {
             background: #f9f9f9;
             border-radius: 12px;
@@ -114,18 +146,36 @@
             justify-content: space-between;
             align-items: center;
         }
-        .cart-item-info { flex: 1; }
-        .cart-item-name { font-weight: bold; font-size: 16px; }
-        .cart-item-ozm { font-size: 12px; color: #666; }
-        .cart-item-qty { font-size: 18px; font-weight: bold; color: #007aff; }
+        
+        .cart-item-info {
+            flex: 1;
+        }
+        
+        .cart-item-name {
+            font-weight: bold;
+            font-size: 15px;
+        }
+        
+        .cart-item-ozm {
+            font-size: 11px;
+            color: #666;
+        }
+        
+        .cart-item-qty {
+            font-size: 16px;
+            font-weight: bold;
+            color: #007aff;
+        }
+        
         .cart-item-delete {
             background: none;
             border: none;
-            font-size: 24px;
+            font-size: 22px;
             cursor: pointer;
             color: #ff3b30;
-            padding: 0 8px;
+            padding: 0 10px;
         }
+        
         .total-row {
             display: flex;
             justify-content: space-between;
@@ -134,24 +184,34 @@
             margin-top: 12px;
             border-top: 2px solid #e0e0e0;
             font-weight: bold;
-            font-size: 18px;
+            font-size: 16px;
         }
-        .hidden { display: none; }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .error-message, .success-message {
+            padding: 12px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            text-align: center;
+            font-size: 14px;
+        }
+        
         .error-message {
             background: #f8d7da;
             color: #721c24;
-            padding: 12px;
-            border-radius: 12px;
-            margin-bottom: 16px;
-            text-align: center;
         }
+        
         .success-message {
             background: #d4edda;
             color: #155724;
-            padding: 12px;
-            border-radius: 12px;
-            margin-bottom: 16px;
-            text-align: center;
+        }
+        
+        h3 {
+            font-size: 18px;
+            margin-bottom: 12px;
         }
     </style>
 </head>
@@ -182,7 +242,7 @@
     </div>
     
     <div id="cartSection" class="card">
-        <h3 style="margin: 0 0 16px 0;">🛒 Корзина</h3>
+        <h3>🛒 Корзина</h3>
         <div id="cartItems"><div style="text-align: center; color: #999; padding: 20px;">Корзина пуста</div></div>
         <div class="total-row hidden" id="totalRow">
             <span>📊 Всего позиций:</span>
@@ -192,6 +252,7 @@
     </div>
 </div>
 
+<script src="https://unpkg.com/@zxing/library@0.19.2/umd/index.min.js"></script>
 <script>
 // ============= НАСТРОЙКИ =============
 // ⚠️ ЭТОТ АДРЕС НУЖНО ЗАМЕНИТЬ НА АДРЕС ИЗ CLOUDPUB!
@@ -208,7 +269,7 @@ async function checkConnection() {
     statusDiv.className = 'status checking';
     
     try {
-        const response = await fetch(`${SERVER_URL}/status`, { method: 'GET', timeout: 5000 });
+        const response = await fetch(`${SERVER_URL}/status`, { method: 'GET' });
         const data = await response.json();
         
         if (data.status === 'running') {
@@ -235,7 +296,7 @@ async function getMaterialInfo(ozm) {
         const data = await response.json();
         return data;
     } catch(e) {
-        return { found: false, error: 'Ошибка соединения с сервером' };
+        return { found: false, error: 'Ошибка соединения' };
     }
 }
 
@@ -254,11 +315,11 @@ async function completeCheckout(person, items) {
         const response = await fetch(`${SERVER_URL}/checkout`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ person: person, items: items })
+            body: JSON.stringify({ person, items })
         });
         return await response.json();
     } catch(e) {
-        return { status: 'error', message: 'Ошибка соединения с сервером' };
+        return { status: 'error', message: 'Ошибка соединения' };
     }
 }
 
@@ -269,9 +330,11 @@ function showMessage(elementId, text) {
     setTimeout(() => el.classList.add('hidden'), 5000);
 }
 
+// --- Инициализация ---
 checkConnection();
 setInterval(checkConnection, 30000);
 
+// --- Сканер ---
 document.getElementById('startCameraBtn').addEventListener('click', startScanner);
 document.getElementById('stopCameraBtn').addEventListener('click', stopScanner);
 
@@ -304,13 +367,17 @@ function startScanner() {
 }
 
 function stopScanner() {
-    if (scanner) { scanner.reset(); scanner = null; }
+    if (scanner) {
+        scanner.reset();
+        scanner = null;
+    }
     if (videoElement && videoElement.srcObject) {
         videoElement.srcObject.getTracks().forEach(track => track.stop());
         videoElement.srcObject = null;
     }
 }
 
+// --- Логика работы ---
 async function onBarcodeScanned(ozm) {
     const info = await getMaterialInfo(ozm);
     if (!info.found) {
@@ -318,10 +385,8 @@ async function onBarcodeScanned(ozm) {
         return;
     }
     
-    currentScannedItem = { ozm: ozm, name: info.name, stock_qty: info.stock_qty };
-    
-    // Создаём модальное окно для ввода количества
-    const qty = prompt(`Материал: ${info.name}\nОстаток на складе: ${info.stock_qty} шт.\nВведите количество для добавления в корзину:`, "1");
+    currentScannedItem = { ozm, name: info.name, stock_qty: info.stock_qty };
+    const qty = prompt(`Найден: ${info.name}\nОстаток: ${info.stock_qty} шт.\nВведите количество:`, "1");
     if (!qty) return;
     
     const qtyNum = parseFloat(qty);
@@ -334,14 +399,17 @@ async function onBarcodeScanned(ozm) {
         return;
     }
     
-    cart.push({ ozm: currentScannedItem.ozm, name: currentScannedItem.name, qty: qtyNum });
+    cart.push({ ozm, name: info.name, qty: qtyNum });
     updateCartDisplay();
-    showMessage('successMessage', `✅ "${currentScannedItem.name}" добавлен в корзину (${qtyNum} шт.)`);
+    showMessage('successMessage', `✅ "${info.name}" добавлен (${qtyNum} шт.)`);
 }
 
 document.getElementById('manualSubmitBtn').addEventListener('click', async () => {
     const ozm = document.getElementById('manualOzm').value.trim();
-    if (!ozm) { showMessage('errorMessage', 'Введите ОЗМ'); return; }
+    if (!ozm) {
+        showMessage('errorMessage', 'Введите ОЗМ');
+        return;
+    }
     document.getElementById('manualOzm').value = '';
     await onBarcodeScanned(ozm);
 });
@@ -388,15 +456,20 @@ function updateCartDisplay() {
 }
 
 document.getElementById('checkoutBtn').addEventListener('click', async () => {
-    if (cart.length === 0) { showMessage('errorMessage', 'Корзина пуста!'); return; }
+    if (cart.length === 0) {
+        showMessage('errorMessage', 'Корзина пуста!');
+        return;
+    }
     
     const persons = await getPersonsList();
-    if (persons.length === 0) { showMessage('errorMessage', 'Не удалось загрузить список получателей'); return; }
+    if (!persons.length) {
+        showMessage('errorMessage', 'Не удалось загрузить список получателей');
+        return;
+    }
     
     const modal = document.createElement('div');
-    modal.className = 'modal';
     modal.style.cssText = 'position: fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; z-index:1000;';
-    modal.innerHTML = `<div style="background:white; border-radius:24px; padding:24px; max-width:320px; width:90%; text-align:center;">
+    modal.innerHTML = `<div style="background:white; border-radius:20px; padding:20px; max-width:320px; width:90%; text-align:center;">
         <h3 style="margin:0 0 16px 0;">👤 Кто берёт материалы?</h3>
         <div style="max-height:400px; overflow-y:auto;">
             ${persons.map(p => `<button class="btn btn-primary" style="margin:8px 0; padding:12px;" data-person="${p}">${p}</button>`).join('')}
@@ -413,14 +486,15 @@ document.getElementById('checkoutBtn').addEventListener('click', async () => {
             await processCheckout(person);
         });
     });
+    
     modal.querySelector('#closePersonModal')?.addEventListener('click', () => modal.remove());
 });
 
 async function processCheckout(person) {
-    const checkoutBtn = document.getElementById('checkoutBtn');
-    const originalText = checkoutBtn.textContent;
-    checkoutBtn.textContent = '⏳ Отправка...';
-    checkoutBtn.disabled = true;
+    const btn = document.getElementById('checkoutBtn');
+    const originalText = btn.textContent;
+    btn.textContent = '⏳ Отправка...';
+    btn.disabled = true;
     
     const result = await completeCheckout(person, cart);
     
@@ -432,8 +506,8 @@ async function processCheckout(person) {
         showMessage('errorMessage', `❌ Ошибка: ${result.message}`);
     }
     
-    checkoutBtn.textContent = originalText;
-    checkoutBtn.disabled = false;
+    btn.textContent = originalText;
+    btn.disabled = false;
 }
 
 function escapeHtml(text) {
@@ -443,6 +517,5 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 </script>
-<script src="https://unpkg.com/@zxing/library@0.19.2/umd/index.min.js"></script>
 </body>
 </html>
