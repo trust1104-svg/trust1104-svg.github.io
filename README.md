@@ -117,6 +117,11 @@
             color: white;
         }
         
+        .btn-warning {
+            background: #ff9800;
+            color: white;
+        }
+        
         .input-group {
             margin-bottom: 15px;
         }
@@ -142,23 +147,25 @@
             border-radius: 12px;
             padding: 12px;
             margin-bottom: 8px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
         }
         
         .cart-item-info {
-            flex: 1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
         }
         
         .cart-item-name {
             font-weight: bold;
             font-size: 15px;
+            flex: 1;
         }
         
         .cart-item-ozm {
             font-size: 11px;
             color: #666;
+            margin-top: 4px;
         }
         
         .cart-item-qty {
@@ -167,13 +174,35 @@
             color: #007aff;
         }
         
-        .cart-item-delete {
-            background: none;
+        .cart-item-actions {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 10px;
+            margin-top: 8px;
+        }
+        
+        .cart-item-actions button {
+            padding: 6px 15px;
+            font-size: 14px;
             border: none;
-            font-size: 22px;
+            border-radius: 8px;
             cursor: pointer;
-            color: #ff3b30;
-            padding: 0 10px;
+        }
+        
+        .btn-minus {
+            background: #ff9800;
+            color: white;
+        }
+        
+        .btn-plus {
+            background: #4caf50;
+            color: white;
+        }
+        
+        .btn-delete {
+            background: #ff3b30;
+            color: white;
         }
         
         .total-row {
@@ -236,7 +265,7 @@
             <div class="input-group">
                 <label>🔢 Или введите ОЗМ вручную:</label>
                 <input type="text" id="manualOzm" placeholder="Введите штрих-код">
-                <button class="btn btn-primary" id="manualSubmitBtn" style="margin-top: 8px;">🔍 Найти материал</button>
+                <button class="btn btn-primary" id="manualSubmitBtn" style="margin-top: 8px;">🔍 Найти и добавить 1 шт</button>
             </div>
         </div>
     </div>
@@ -255,11 +284,10 @@
 <script src="https://unpkg.com/@zxing/library@0.19.2/umd/index.min.js"></script>
 <script>
 // ============= НАСТРОЙКИ =============
-// ⚠️ ЭТОТ АДРЕС НУЖНО ЗАМЕНИТЬ НА АДРЕС ИЗ CLOUDPUB!
+// ⚠️ ЗАМЕНИТЕ ЭТОТ АДРЕС НА ВАШ АДРЕС ИЗ CLOUDPUB!
 const SERVER_URL = 'https://diffidently-stalwart-pademelon.cloudpub.ru';
 
 let cart = [];
-let currentScannedItem = null;
 let scanner = null;
 let videoElement = null;
 
@@ -327,7 +355,7 @@ function showMessage(elementId, text) {
     const el = document.getElementById(elementId);
     el.textContent = text;
     el.classList.remove('hidden');
-    setTimeout(() => el.classList.add('hidden'), 5000);
+    setTimeout(() => el.classList.add('hidden'), 3000);
 }
 
 // --- Инициализация ---
@@ -355,11 +383,7 @@ function startScanner() {
             scanner.decodeFromVideoDevice(null, video, (result, err) => {
                 if (result) {
                     const barcode = result.getText();
-                    stopScanner();
-                    document.getElementById('startCameraBtn').style.display = 'block';
-                    document.getElementById('stopCameraBtn').style.display = 'none';
-                    video.style.display = 'none';
-                    onBarcodeScanned(barcode);
+                    addToCart(barcode, 1);
                 }
             });
         })
@@ -375,35 +399,32 @@ function stopScanner() {
         videoElement.srcObject.getTracks().forEach(track => track.stop());
         videoElement.srcObject = null;
     }
+    document.getElementById('startCameraBtn').style.display = 'block';
+    document.getElementById('stopCameraBtn').style.display = 'none';
+    if (videoElement) videoElement.style.display = 'none';
 }
 
-// --- Логика работы ---
-async function onBarcodeScanned(ozm) {
+// --- Добавление в корзину ---
+async function addToCart(ozm, qty = 1) {
     const info = await getMaterialInfo(ozm);
     if (!info.found) {
-        showMessage('errorMessage', info.error || 'Материал не найден в базе!');
-        return;
+        showMessage('errorMessage', info.error || 'Материал не найден!');
+        return false;
     }
     
-    currentScannedItem = { ozm, name: info.name, stock_qty: info.stock_qty };
-    const qty = prompt(`Найден: ${info.name}\nОстаток: ${info.stock_qty} шт.\nВведите количество:`, "1");
-    if (!qty) return;
-    
-    const qtyNum = parseFloat(qty);
-    if (isNaN(qtyNum) || qtyNum <= 0) {
-        showMessage('errorMessage', 'Введите корректное количество');
-        return;
-    }
-    if (qtyNum > info.stock_qty) {
-        showMessage('errorMessage', `Недостаточно на складе! Доступно: ${info.stock_qty} шт.`);
-        return;
+    const existingIndex = cart.findIndex(item => item.ozm === ozm);
+    if (existingIndex >= 0) {
+        cart[existingIndex].qty += qty;
+    } else {
+        cart.push({ ozm, name: info.name, qty: qty });
     }
     
-    cart.push({ ozm, name: info.name, qty: qtyNum });
     updateCartDisplay();
-    showMessage('successMessage', `✅ "${info.name}" добавлен (${qtyNum} шт.)`);
+    showMessage('successMessage', `✅ "${info.name}" добавлен (${qty} шт.)`);
+    return true;
 }
 
+// --- Ручной ввод ---
 document.getElementById('manualSubmitBtn').addEventListener('click', async () => {
     const ozm = document.getElementById('manualOzm').value.trim();
     if (!ozm) {
@@ -411,13 +432,14 @@ document.getElementById('manualSubmitBtn').addEventListener('click', async () =>
         return;
     }
     document.getElementById('manualOzm').value = '';
-    await onBarcodeScanned(ozm);
+    await addToCart(ozm, 1);
 });
 
 document.getElementById('manualOzm').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') document.getElementById('manualSubmitBtn').click();
 });
 
+// --- Обновление корзины ---
 function updateCartDisplay() {
     const container = document.getElementById('cartItems');
     const totalRow = document.getElementById('totalRow');
@@ -438,8 +460,14 @@ function updateCartDisplay() {
                 <div class="cart-item-name">${escapeHtml(item.name)}</div>
                 <div class="cart-item-ozm">${escapeHtml(item.ozm)}</div>
             </div>
-            <div class="cart-item-qty">${item.qty} шт.</div>
-            <button class="cart-item-delete" data-index="${index}">🗑️</button>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div class="cart-item-qty">${item.qty} шт.</div>
+                <div class="cart-item-actions">
+                    <button class="btn-minus" data-index="${index}">-1</button>
+                    <button class="btn-plus" data-index="${index}">+1</button>
+                    <button class="btn-delete" data-index="${index}">Удалить</button>
+                </div>
+            </div>
         </div>`;
     });
     
@@ -447,14 +475,39 @@ function updateCartDisplay() {
     totalRow.classList.remove('hidden');
     totalCountSpan.textContent = totalItems;
     
-    document.querySelectorAll('.cart-item-delete').forEach(btn => {
+    document.querySelectorAll('.btn-minus').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            cart.splice(parseInt(btn.dataset.index), 1);
+            e.stopPropagation();
+            const index = parseInt(btn.dataset.index);
+            if (cart[index].qty > 1) {
+                cart[index].qty -= 1;
+            } else {
+                cart.splice(index, 1);
+            }
+            updateCartDisplay();
+        });
+    });
+    
+    document.querySelectorAll('.btn-plus').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const index = parseInt(btn.dataset.index);
+            cart[index].qty += 1;
+            updateCartDisplay();
+        });
+    });
+    
+    document.querySelectorAll('.btn-delete').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const index = parseInt(btn.dataset.index);
+            cart.splice(index, 1);
             updateCartDisplay();
         });
     });
 }
 
+// --- Оформление выдачи ---
 document.getElementById('checkoutBtn').addEventListener('click', async () => {
     if (cart.length === 0) {
         showMessage('errorMessage', 'Корзина пуста!');
@@ -472,7 +525,7 @@ document.getElementById('checkoutBtn').addEventListener('click', async () => {
     modal.innerHTML = `<div style="background:white; border-radius:20px; padding:20px; max-width:320px; width:90%; text-align:center;">
         <h3 style="margin:0 0 16px 0;">👤 Кто берёт материалы?</h3>
         <div style="max-height:400px; overflow-y:auto;">
-            ${persons.map(p => `<button class="btn btn-primary" style="margin:8px 0; padding:12px;" data-person="${p}">${p}</button>`).join('')}
+            ${persons.map(p => `<button class="btn btn-primary" style="margin:8px 0; padding:12px; width:100%;" data-person="${p}">${p}</button>`).join('')}
         </div>
         <button class="btn btn-secondary" id="closePersonModal" style="margin-top:12px;">Отмена</button>
     </div>`;
@@ -496,7 +549,8 @@ async function processCheckout(person) {
     btn.textContent = '⏳ Отправка...';
     btn.disabled = true;
     
-    const result = await completeCheckout(person, cart);
+    const itemsToSend = cart.map(item => ({ ozm: item.ozm, name: item.name, qty: item.qty }));
+    const result = await completeCheckout(person, itemsToSend);
     
     if (result.status === 'success') {
         showMessage('successMessage', `✅ Выдача оформлена!\n👤 Получатель: ${person}\n📊 Позиций: ${cart.length}`);
