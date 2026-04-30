@@ -117,11 +117,6 @@
             color: white;
         }
         
-        .btn-warning {
-            background: #ff9800;
-            color: white;
-        }
-        
         .input-group {
             margin-bottom: 15px;
         }
@@ -154,11 +149,12 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 8px;
+            flex-wrap: wrap;
         }
         
         .cart-item-name {
             font-weight: bold;
-            font-size: 15px;
+            font-size: 14px;
             flex: 1;
         }
         
@@ -169,38 +165,27 @@
         }
         
         .cart-item-qty {
-            font-size: 16px;
-            font-weight: bold;
-            color: #007aff;
-        }
-        
-        .cart-item-actions {
             display: flex;
-            justify-content: flex-end;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
             margin-top: 8px;
         }
         
-        .cart-item-actions button {
-            padding: 6px 15px;
+        .cart-item-qty input {
+            width: 70px;
+            padding: 8px;
+            font-size: 14px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .cart-item-qty button {
+            padding: 8px 15px;
             font-size: 14px;
             border: none;
             border-radius: 8px;
             cursor: pointer;
-        }
-        
-        .btn-minus {
-            background: #ff9800;
-            color: white;
-        }
-        
-        .btn-plus {
-            background: #4caf50;
-            color: white;
-        }
-        
-        .btn-delete {
             background: #ff3b30;
             color: white;
         }
@@ -265,7 +250,7 @@
             <div class="input-group">
                 <label>🔢 Или введите ОЗМ вручную:</label>
                 <input type="text" id="manualOzm" placeholder="Введите штрих-код">
-                <button class="btn btn-primary" id="manualSubmitBtn" style="margin-top: 8px;">🔍 Найти и добавить 1 шт</button>
+                <button class="btn btn-primary" id="manualSubmitBtn" style="margin-top: 8px;">🔍 Добавить материал</button>
             </div>
         </div>
     </div>
@@ -318,8 +303,7 @@ async function getMaterialInfo(ozm) {
     try {
         const response = await fetch(`${SERVER_URL}/material/${encodeURIComponent(ozm)}`);
         if (response.status === 404) {
-            const error = await response.json();
-            return { found: false, error: error.error || 'Материал не найден' };
+            return { found: false, error: 'Материал не найден' };
         }
         const data = await response.json();
         return data;
@@ -383,7 +367,8 @@ function startScanner() {
             scanner.decodeFromVideoDevice(null, video, (result, err) => {
                 if (result) {
                     const barcode = result.getText();
-                    addToCart(barcode, 1);
+                    stopScanner(); // Останавливаем камеру после сканирования
+                    addToCart(barcode);
                 }
             });
         })
@@ -405,22 +390,23 @@ function stopScanner() {
 }
 
 // --- Добавление в корзину ---
-async function addToCart(ozm, qty = 1) {
+async function addToCart(ozm) {
     const info = await getMaterialInfo(ozm);
     if (!info.found) {
         showMessage('errorMessage', info.error || 'Материал не найден!');
         return false;
     }
     
+    // Проверяем, есть ли уже такой материал в корзине
     const existingIndex = cart.findIndex(item => item.ozm === ozm);
     if (existingIndex >= 0) {
-        cart[existingIndex].qty += qty;
+        cart[existingIndex].qty += 1;
     } else {
-        cart.push({ ozm, name: info.name, qty: qty });
+        cart.push({ ozm, name: info.name, qty: 1 });
     }
     
     updateCartDisplay();
-    showMessage('successMessage', `✅ "${info.name}" добавлен (${qty} шт.)`);
+    showMessage('successMessage', `✅ "${info.name}" добавлен в корзину`);
     return true;
 }
 
@@ -432,7 +418,7 @@ document.getElementById('manualSubmitBtn').addEventListener('click', async () =>
         return;
     }
     document.getElementById('manualOzm').value = '';
-    await addToCart(ozm, 1);
+    await addToCart(ozm);
 });
 
 document.getElementById('manualOzm').addEventListener('keypress', (e) => {
@@ -457,16 +443,15 @@ function updateCartDisplay() {
         totalItems += item.qty;
         html += `<div class="cart-item">
             <div class="cart-item-info">
-                <div class="cart-item-name">${escapeHtml(item.name)}</div>
-                <div class="cart-item-ozm">${escapeHtml(item.ozm)}</div>
-            </div>
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div class="cart-item-qty">${item.qty} шт.</div>
-                <div class="cart-item-actions">
-                    <button class="btn-minus" data-index="${index}">-1</button>
-                    <button class="btn-plus" data-index="${index}">+1</button>
-                    <button class="btn-delete" data-index="${index}">Удалить</button>
+                <div>
+                    <div class="cart-item-name">${escapeHtml(item.name)}</div>
+                    <div class="cart-item-ozm">${escapeHtml(item.ozm)}</div>
                 </div>
+            </div>
+            <div class="cart-item-qty">
+                <span>Количество:</span>
+                <input type="number" class="qty-input" data-index="${index}" value="${item.qty}" min="0" step="1">
+                <button class="delete-btn" data-index="${index}">Удалить</button>
             </div>
         </div>`;
     });
@@ -475,31 +460,23 @@ function updateCartDisplay() {
     totalRow.classList.remove('hidden');
     totalCountSpan.textContent = totalItems;
     
-    document.querySelectorAll('.btn-minus').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const index = parseInt(btn.dataset.index);
-            if (cart[index].qty > 1) {
-                cart[index].qty -= 1;
-            } else {
+    // Обработчики изменения количества
+    document.querySelectorAll('.qty-input').forEach(input => {
+        input.addEventListener('change', (e) => {
+            const index = parseInt(input.dataset.index);
+            let newQty = parseInt(input.value);
+            if (isNaN(newQty) || newQty <= 0) {
                 cart.splice(index, 1);
+            } else {
+                cart[index].qty = newQty;
             }
             updateCartDisplay();
         });
     });
     
-    document.querySelectorAll('.btn-plus').forEach(btn => {
+    // Обработчики удаления
+    document.querySelectorAll('.delete-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const index = parseInt(btn.dataset.index);
-            cart[index].qty += 1;
-            updateCartDisplay();
-        });
-    });
-    
-    document.querySelectorAll('.btn-delete').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
             const index = parseInt(btn.dataset.index);
             cart.splice(index, 1);
             updateCartDisplay();
